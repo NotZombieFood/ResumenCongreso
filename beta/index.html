@@ -1,0 +1,193 @@
+<!doctype html>
+<html class="no-js" lang="EN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>MiCongreso | Beta</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        padding: 20px 0px;
+    }
+
+    .title {
+        color: #FF7F7FFF;
+        font-size: 45px;
+        font-weight: bolder;
+    }
+
+    .paragraph_title {
+        color: #292929;
+        font-size: 20px;
+    }
+
+    .box {
+        background-color: #FF7F7FFF;
+        padding: 20px;
+        color: white;
+        margin: 20px 0px;
+    }
+
+    .box h1 {
+        font-size: 25px;
+        font-weight: bold;
+    }
+
+    .box h2 {
+        font-size: 18px;
+    }
+
+    .box p {
+        font-size: 16px;
+    }
+
+    .article {
+        background-color: #292929;
+
+    }
+
+    .box a {
+        margin: 10px 0px;
+        color: white;
+        padding: 10px;
+        text-decoration: none !important;
+        transition: all 1s;
+    }
+
+    .box a:hover {
+        color: #292929;
+        background-color: white;
+    }
+
+    .no_items {
+        text-align: center;
+        display: none;
+    }
+
+    .no_items h1 {
+        font-size: 30px;
+        font-weight: bolder;
+        color: rgb(247, 88, 88);
+    }
+
+    .yes {
+        margin-right: 15px;
+        background-color: #85e94bef
+    }
+
+    .no {
+        background-color: rgb(247, 88, 88);
+    }
+</style>
+
+<body class="index">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="title">
+                    Beta MiCongreso V1.1
+                </h1>
+                <p class="paragraph_title">
+                    Por favor verifica que los resumenes tengan sentido y vota para poder mejorar el procedimiento.
+                    <br> Este sitio se actualizara cada vez que haya un post del tema en el
+                    <b>Diarío Oficial de la Federación</b>
+                </p>
+            </div>
+        </div>
+        <div id="insert" class="row">
+            <div class="col-md-12 no_items">
+                <h1>Lo sentimos, no hay items actualmente para mostrarte.</h1>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="jquery.storageapi.min.js"></script>
+<script>
+    storage = $.localStorage;
+    var template =
+        `
+    <div class="col-md-12 box">
+        <h1>{{TITLE}}</h1>
+        <h2>{{CATEGORY}}</h2>
+        <p>{{SUMMARY}}</p>
+        <a class="article" href="{{url}}">Artículo original</a>
+        <h3>¿Entendiste el resumen?</h3>
+        <a class="yes vote" data-id="{{id}}" data-vote="yes">Sí</a>
+        <a class="no vote" data-id="{{id}}" data-vote="no">No</a>
+    </div>
+    `;
+    var url = "http://localhost:5000"
+    $.ajax({
+        url: url + "/data",
+        dataType: 'json',
+        method: 'GET',
+        complete: function (data) {
+            if (data.responseText == undefined) {
+                $(".no_items").fadeIn();
+            } else if (data.responseText == null) {
+                $(".no_items").fadeIn();
+            } else {
+                var json = JSON.parse(data.responseText.replace(/'/g, '"'));
+                for (var i = 0; i < json.length; i++) {
+                    var obj = json[i];
+                    if (storage.isEmpty('ids')) {
+                        $("#insert").append(template.replace(/{{TITLE}}/g, obj.title).replace(
+                            /{{CATEGORY}}/g, obj.category).replace(/{{id}}/g, obj.id).replace(
+                            /{{url}}/g, obj.url).replace(/{{SUMMARY}}/g, obj.summary));
+                    } else {
+                        var ids = storage.get('ids');
+                        var checkID = (ids.indexOf(obj.id) > -1);
+                        if (!checkID) {
+                            $("#insert").append(template.replace(/{{TITLE}}/g, obj.title).replace(
+                                /{{CATEGORY}}/g, obj.category).replace(/{{id}}/g, obj.id).replace(
+                                /{{url}}/g, obj.url).replace(/{{SUMMARY}}/g, obj.summary));
+                        }
+                    }
+                }
+
+            }
+            $(".vote").click(function (event) {
+                event.preventDefault();
+                var id = $(this).data("id");
+                var vote = $(this).data("vote");
+                console.log(id);
+                console.log(vote);
+                $(this).parent().remove();
+                $.ajax({
+                    url: url + "/vote",
+                    method: 'GET',
+                    data: {
+                        "id": id,
+                        "response": vote
+                    },
+                    complete: function (data) {
+                        if (storage.isEmpty('ids')) {
+                            storage.set('ids', [id]);
+                        } else {
+                            var array = storage.get('ids');
+                            array.push(id);
+                            storage.set("ids", array);
+                        }
+                        if($(".box")[0]){
+                            console.log("there are more boxes");
+                        }else{
+                            $(".no_items").fadeIn();
+                        }
+                    }
+                });
+            });
+        },
+        failure: function (data) {
+            console.log(data);
+        }
+    });
+</script>
+
+</html>
