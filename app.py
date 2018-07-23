@@ -23,4 +23,4 @@ def obtain_data():
     return str(functions.readPickle())
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
